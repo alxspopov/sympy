@@ -6,6 +6,7 @@ from sympy.logic.boolalg import conjuncts
 from sympy.assumptions import Q, ask
 from sympy.assumptions.handlers import CommonHandler
 
+
 class AskInfinitesimalHandler(CommonHandler):
     """
     Handler for key 'infinitesimal'
@@ -36,11 +37,12 @@ class AskInfinitesimalHandler(CommonHandler):
                 result = True
             elif ask(Q.bounded(arg), assumptions):
                 continue
-            else: break
+            else:
+                break
         else:
             return result
 
-    Add, Pow = Mul, Mul
+    Add, Pow = [Mul]*2
 
     @staticmethod
     def Number(expr, assumptions):
@@ -48,9 +50,7 @@ class AskInfinitesimalHandler(CommonHandler):
 
     NumberSymbol = Number
 
-    @staticmethod
-    def ImaginaryUnit(expr, assumptions):
-        return False
+    ImaginaryUnit = staticmethod(CommonHandler.AlwaysFalse)
 
 
 class AskBoundedHandler(CommonHandler):
@@ -159,7 +159,7 @@ class AskBoundedHandler(CommonHandler):
 
         """
 
-        sign = -1 # sign of unknown or unbounded
+        sign = -1  # sign of unknown or unbounded
         result = True
         for arg in expr.args:
             _bounded = ask(Q.bounded(arg), assumptions)
@@ -170,7 +170,7 @@ class AskBoundedHandler(CommonHandler):
             # is None and Bounded is None or there was already
             # an unknown sign, return None
             if sign != -1 and s != sign or \
-               s == None and (s == _bounded or s == sign):
+                    s is None and (s == _bounded or s == sign):
                 return None
             else:
                 sign = s
@@ -246,17 +246,17 @@ class AskBoundedHandler(CommonHandler):
         """
         base_bounded = ask(Q.bounded(expr.base), assumptions)
         exp_bounded = ask(Q.bounded(expr.exp), assumptions)
-        if base_bounded==None and exp_bounded==None: # Common Case
+        if base_bounded is None and exp_bounded is None:  # Common Case
             return None
-        if base_bounded==False and ask(Q.nonzero(expr.exp), assumptions):
+        if base_bounded is False and ask(Q.nonzero(expr.exp), assumptions):
             return False
         if base_bounded and exp_bounded:
             return True
-        if abs(expr.base)<=1 and ask(Q.positive(expr.exp), assumptions):
+        if abs(expr.base) <= 1 and ask(Q.positive(expr.exp), assumptions):
             return True
-        if abs(expr.base)>=1 and ask(Q.negative(expr.exp), assumptions):
+        if abs(expr.base) >= 1 and ask(Q.negative(expr.exp), assumptions):
             return True
-        if abs(expr.base)>=1 and exp_bounded==False:
+        if abs(expr.base) >= 1 and exp_bounded is False:
             return False
         return None
 
@@ -266,36 +266,7 @@ class AskBoundedHandler(CommonHandler):
 
     exp = log
 
-    @staticmethod
-    def sin(expr, assumptions):
-        return True
+    cos, sin, Number, Pi, Exp1, GoldenRatio, ImaginaryUnit, sign = \
+        [staticmethod(CommonHandler.AlwaysTrue)]*8
 
-    cos = sin
-
-    @staticmethod
-    def Number(expr, assumptions):
-        return True
-
-    @staticmethod
-    def Infinity(expr, assumptions):
-        return False
-
-    @staticmethod
-    def NegativeInfinity(expr, assumptions):
-        return False
-
-    @staticmethod
-    def Pi(expr, assumptions):
-        return True
-
-    @staticmethod
-    def Exp1(expr, assumptions):
-        return True
-
-    @staticmethod
-    def ImaginaryUnit(expr, assumptions):
-        return True
-
-    @staticmethod
-    def sign(expr, assumptions):
-        return True
+    Infinity, NegativeInfinity = [staticmethod(CommonHandler.AlwaysFalse)]*2

@@ -24,8 +24,8 @@ Examples
 
 >>> from sympy.stats import P, E, variance, Die, Normal
 >>> from sympy import Eq, simplify
->>> X, Y = Die(6), Die(6) # Define two six sided dice
->>> Z = Normal(0, 1) # Declare a Normal random variable with mean 0, std 1
+>>> X, Y = Die('X', 6), Die('Y', 6) # Define two six sided dice
+>>> Z = Normal('Z', 0, 1) # Declare a Normal random variable with mean 0, std 1
 >>> P(X>3) # Probability X is greater than 3
 1/2
 >>> E(X+Y) # Expectation of the sum of two dice
@@ -39,13 +39,31 @@ Examples
 __all__ = []
 
 import rv_interface
-from rv_interface import *
+from rv_interface import (
+    cdf, covariance, density, dependent, E, given, independent, P, pspace,
+    random_symbols, sample, sample_iter, skewness, std, variance, where,
+    correlation, moment, cmoment, smoment,
+)
 __all__.extend(rv_interface.__all__)
 
 import frv_types
-from frv_types import *
+from frv_types import (
+    Bernoulli, Binomial, Coin, Die, DiscreteUniform, FiniteRV, Hypergeometric,
+)
 __all__.extend(frv_types.__all__)
 
 import crv_types
-from crv_types import *
+from crv_types import (
+    ContinuousRV,
+    Arcsin, Benini, Beta, BetaPrime, Cauchy, Chi, ChiNoncentral, ChiSquared,
+    Dagum, Erlang, Exponential, FDistribution, FisherZ, Frechet, Gamma,
+    GammaInverse, Kumaraswamy, Laplace, Logistic, LogNormal, Maxwell,
+    Nakagami, Normal, Pareto, QuadraticU, RaisedCosine, Rayleigh,
+    StudentT, Triangular, Uniform, UniformSum, VonMises, Weibull,
+    WignerSemicircle
+)
 __all__.extend(crv_types.__all__)
+
+import drv_types
+from drv_types import (Geometric, Poisson)
+__all__.extend(drv_types.__all__)

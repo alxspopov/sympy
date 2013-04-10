@@ -4,7 +4,7 @@ Handlers for keys related to number theory: prime, even, odd, etc.
 from sympy.assumptions import Q, ask
 from sympy.assumptions.handlers import CommonHandler
 from sympy.ntheory import isprime
-from sympy.ntheory.residue_ntheory import int_tested
+
 
 class AskPrimeHandler(CommonHandler):
     """
@@ -40,7 +40,8 @@ class AskPrimeHandler(CommonHandler):
         for arg in expr.args:
             if ask(Q.integer(arg), assumptions):
                 pass
-            else: break
+            else:
+                break
         else:
             # a product of integers can't be a prime
             return False
@@ -60,29 +61,16 @@ class AskPrimeHandler(CommonHandler):
     def Integer(expr, assumptions):
         return isprime(expr)
 
-    @staticmethod
-    def Rational(expr, assumptions):
-        return False
+    Rational, Infinity, NegativeInfinity, ImaginaryUnit = [staticmethod(CommonHandler.AlwaysFalse)]*4
 
     @staticmethod
     def Float(expr, assumptions):
         return AskPrimeHandler._number(expr, assumptions)
 
     @staticmethod
-    def Infinity(expr, assumptions):
-        return False
-
-    @staticmethod
-    def NegativeInfinity(expr, assumptions):
-        return False
-
-    @staticmethod
-    def ImaginaryUnit(expr, assumptions):
-        return False
-
-    @staticmethod
     def NumberSymbol(expr, assumptions):
         return AskPrimeHandler._number(expr, assumptions)
+
 
 class AskCompositeHandler(CommonHandler):
 
@@ -93,10 +81,14 @@ class AskCompositeHandler(CommonHandler):
             _integer = ask(Q.integer(expr), assumptions)
             if _integer:
                 _prime = ask(Q.prime(expr), assumptions)
-                if _prime is None: return
+                if _prime is None:
+                    return
                 return not _prime
-            else: return _integer
-        else: return _positive
+            else:
+                return _integer
+        else:
+            return _positive
+
 
 class AskEvenHandler(CommonHandler):
 
@@ -140,11 +132,15 @@ class AskEvenHandler(CommonHandler):
                 if irrational:
                     break
                 irrational = True
-            else: break
+            else:
+                break
         else:
-            if irrational: return False
-            if even: return True
-            if odd == len(expr.args): return False
+            if irrational:
+                return False
+            if even:
+                return True
+            if odd == len(expr.args):
+                return False
 
     @staticmethod
     def Add(expr, assumptions):
@@ -162,7 +158,8 @@ class AskEvenHandler(CommonHandler):
                 pass
             elif ask(Q.odd(arg), assumptions):
                 _result = not _result
-            else: break
+            else:
+                break
         else:
             return _result
 
@@ -170,29 +167,15 @@ class AskEvenHandler(CommonHandler):
     def Integer(expr, assumptions):
         return not bool(expr.p & 1)
 
-    @staticmethod
-    def Rational(expr, assumptions):
-        return False
+    Rational, Infinity, NegativeInfinity, ImaginaryUnit = [staticmethod(CommonHandler.AlwaysFalse)]*4
 
     @staticmethod
     def Float(expr, assumptions):
         return expr % 2 == 0
 
     @staticmethod
-    def Infinity(expr, assumptions):
-        return False
-
-    @staticmethod
-    def NegativeInfinity(expr, assumptions):
-        return False
-
-    @staticmethod
     def NumberSymbol(expr, assumptions):
         return AskEvenHandler._number(expr, assumptions)
-
-    @staticmethod
-    def ImaginaryUnit(expr, assumptions):
-        return False
 
     @staticmethod
     def Abs(expr, assumptions):
@@ -209,6 +192,7 @@ class AskEvenHandler(CommonHandler):
         if ask(Q.real(expr.args[0]), assumptions):
             return True
 
+
 class AskOddHandler(CommonHandler):
     """
     Handler for key 'odd'
@@ -220,6 +204,7 @@ class AskOddHandler(CommonHandler):
         _integer = ask(Q.integer(expr), assumptions)
         if _integer:
             _even = ask(Q.even(expr), assumptions)
-            if _even is None: return None
+            if _even is None:
+                return None
             return not _even
         return _integer

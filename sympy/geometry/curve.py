@@ -45,12 +45,13 @@ class Curve(GeometryEntity):
     ========
 
     sympy.core.function.Function
+    sympy.polys.polyfuncs.interpolate
 
     Examples
     ========
 
-    >>> from sympy import sin, cos, Symbol
-    >>> from sympy.abc import t
+    >>> from sympy import sin, cos, Symbol, interpolate
+    >>> from sympy.abc import t, a
     >>> from sympy.geometry import Curve
     >>> C = Curve((sin(t), cos(t)), (t, 0, 2))
     >>> C.functions
@@ -59,21 +60,34 @@ class Curve(GeometryEntity):
     (t, 0, 2)
     >>> C.parameter
     t
-
+    >>> C = Curve((t, interpolate([1, 4, 9, 16], t)), (t, 0, 1)); C
+    Curve((t, t**2), (t, 0, 1))
+    >>> C.subs(t, 4)
+    Point(4, 16)
+    >>> C.arbitrary_point(a)
+    Point(a, a**2)
     """
 
     def __new__(cls, function, limits):
         fun = sympify(function)
         if not is_sequence(fun) or len(fun) != 2:
-            raise ValueError("Function argument should be (x(t), y(t)) but got %s" % str(function))
+            raise ValueError("Function argument should be (x(t), y(t)) "
+                "but got %s" % str(function))
         if not is_sequence(limits) or len(limits) != 3:
-            raise ValueError("Limit argument should be (t, tmin, tmax) but got %s" % str(limits))
+            raise ValueError("Limit argument should be (t, tmin, tmax) "
+                "but got %s" % str(limits))
+
         return GeometryEntity.__new__(cls, Tuple(*fun), Tuple(*limits))
+
+    def _eval_subs(self, old, new):
+        if old == self.parameter:
+            return Point(*[f.subs(old, new) for f in self.functions])
 
     @property
     def free_symbols(self):
         """
-        Return a set of symbols other than the bound symbols used to parametrically define the Curve.
+        Return a set of symbols other than the bound symbols used to
+        parametrically define the Curve.
 
         Examples
         ========
@@ -183,7 +197,7 @@ class Curve(GeometryEntity):
         >>> Curve((x, x), (x, 0, 1)).rotate(pi/2)
         Curve((-x, x), (x, 0, 1))
         """
-        from sympy.matrices.matrices import Matrix, rot_axis3
+        from sympy.matrices import Matrix, rot_axis3
         pt = -Point(pt or (0, 0))
         rv = self.translate(*pt.args)
         f = list(rv.functions)
@@ -196,9 +210,8 @@ class Curve(GeometryEntity):
             return rv.translate(*pt.args)
         return rv
 
-    def scale(self, x=1, y=1):
-        """Return a new Curve with Curve's functions multiplied by x and y,
-        respectively.
+    def scale(self, x=1, y=1, pt=None):
+        """Override GeometryEntity.scale since Curve is not made up of Points.
 
         Examples
         ========
@@ -208,6 +221,9 @@ class Curve(GeometryEntity):
         >>> Curve((x, x), (x, 0, 1)).scale(2)
         Curve((2*x, x), (x, 0, 1))
         """
+        if pt:
+            pt = Point(pt)
+            return self.translate(*(-pt).args).scale(x, y).translate(*pt.args)
         fx, fy = self.functions
         return self.func((fx*x, fy*y), self.limits)
 
@@ -275,8 +291,10 @@ class Curve(GeometryEntity):
 
         tnew = _symbol(parameter, self.parameter)
         t = self.parameter
-        if tnew.name != t.name and tnew.name in (f.name for f in self.free_symbols):
-            raise ValueError('Symbol %s already appears in object and cannot be used as a parameter.' % tnew.name)
+        if (tnew.name != t.name and
+                tnew.name in (f.name for f in self.free_symbols)):
+            raise ValueError('Symbol %s already appears in object '
+                'and cannot be used as a parameter.' % tnew.name)
         return Point(*[w.subs(t, tnew) for w in self.functions])
 
     def plot_interval(self, parameter='t'):

@@ -13,7 +13,10 @@ from sympy.simplify import simplify
 from sympy.geometry.exceptions import GeometryError
 from sympy.functions.elementary.miscellaneous import sqrt
 from entity import GeometryEntity
-from sympy.matrices.matrices import Matrix
+from sympy.matrices import Matrix
+from sympy.core.numbers import Float
+from sympy.simplify.simplify import nsimplify
+
 
 class Point(GeometryEntity):
     """A point in a 2-dimensional Euclidean space.
@@ -61,6 +64,14 @@ class Point(GeometryEntity):
     >>> Point(0, x)
     Point(0, x)
 
+    Floats are automatically converted to Rational unless the
+    evaluate flag is False:
+
+    >>> Point(0.5, 0.25)
+    Point(1/2, 1/4)
+    >>> Point(0.5, 0.25, evaluate=False)
+    Point(0.5, 0.25)
+
     """
 
     def __new__(cls, *args, **kwargs):
@@ -72,7 +83,10 @@ class Point(GeometryEntity):
             coords = Tuple(*args)
 
         if len(coords) != 2:
-            raise NotImplementedError("Only two dimensional points currently supported")
+            raise NotImplementedError(
+                "Only two dimensional points currently supported")
+        if kwargs.get('evaluate', True):
+            coords = [nsimplify(c) for c in coords]
 
         return GeometryEntity.__new__(cls, *coords)
 
@@ -191,11 +205,10 @@ class Point(GeometryEntity):
         False
 
         """
-
         if len(points) == 0:
             return False
         if len(points) <= 2:
-            return True # two points always form a line
+            return True  # two points always form a line
         points = [Point(a) for a in points]
 
         # XXX Cross product is used now, but that only extends to three
@@ -205,12 +218,15 @@ class Point(GeometryEntity):
         p2 = points[1]
         v1 = p2 - p1
         x1, y1 = v1.args
+        rv = True
         for p3 in points[2:]:
             x2, y2 = (p3 - p1).args
-            test = simplify(x1*y2 - y1*x2)
-            if test != 0:
+            test = simplify(x1*y2 - y1*x2).equals(0)
+            if test is False:
                 return False
-        return True
+            if rv and not test:
+                rv = test
+        return rv
 
     def is_concyclic(*points):
         """Is a sequence of points concyclic?
@@ -390,9 +406,10 @@ class Point(GeometryEntity):
 
         """
         if prec is None:
-            return Point(*[x.evalf(**options) for x in self.args])
+            coords = [x.evalf(**options) for x in self.args]
         else:
-            return Point(*[x.evalf(prec, **options) for x in self.args])
+            coords = [x.evalf(prec, **options) for x in self.args]
+        return Point(*coords, **dict(evaluate=False))
 
     n = evalf
 
@@ -467,8 +484,11 @@ class Point(GeometryEntity):
             rv += pt
         return rv
 
-    def scale(self, x=1, y=1):
-        """Scale the coordinates of the Point by multiplying by x and y.
+    def scale(self, x=1, y=1, pt=None):
+        """Scale the coordinates of the Point by multiplying by
+        ``x`` and ``y`` after subtracting ``pt`` -- default is (0, 0) --
+        and then adding ``pt`` back again (i.e. ``pt`` is the point of
+        reference for the scaling).
 
         See Also
         ========
@@ -486,6 +506,9 @@ class Point(GeometryEntity):
         Point(2, 2)
 
         """
+        if pt:
+            pt = Point(pt)
+            return self.translate(*(-pt).args).scale(x, y).translate(*pt.args)
         return Point(self.x*x, self.y*y)
 
     def translate(self, x=0, y=0):
@@ -505,14 +528,11 @@ class Point(GeometryEntity):
         Point(2, 1)
         >>> t.translate(2, 2)
         Point(2, 3)
+        >>> t + Point(2, 2)
+        Point(2, 3)
 
         """
-        from sympy import Point
-        if not isinstance(x, Point):
-            pt = Point(x, y)
-        else:
-            pt = x
-        return self + pt
+        return Point(self.x + x, self.y + y)
 
     def transform(self, matrix):
         """Return the point after applying the transformation described
@@ -549,7 +569,8 @@ class Point(GeometryEntity):
                 return Point(*[simplify(a + b) for a, b in
                                zip(self.args, other.args)])
             else:
-                raise TypeError("Points must have the same number of dimensions")
+                raise TypeError(
+                    "Points must have the same number of dimensions")
         else:
             raise ValueError('Cannot add non-Point, %s, to a Point' % other)
 
